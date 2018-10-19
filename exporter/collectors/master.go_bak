@@ -1,0 +1,99 @@
+package collectors
+
+import (
+	"fmt"
+	"net"
+	"net/http"
+	//"time"
+	"os"
+	//"io/ioutil"
+	"log"
+	//"encoding/json"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+type Ms3Collector struct {
+	Path     string
+	MasterUp prometheus.Gauge
+}
+
+func NewMs3Collector(path string) *Ms3Collector {
+	if path == "" {
+		fmt.Println("there is no Seaweedfs master found")
+		os.Exit(1)
+	}
+	return &Ms3Collector{
+		Path: path,
+		MasterUp: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: "Seaweedfs",
+				Name:      "MasterUp",
+				Help:      "Seaweedfs master Up",
+			}),
+	}
+}
+
+func (c *Ms3Collector) collect() error {
+	c.MasterUp.Set(float64(1))
+	_, err := net.Dial("tcp", c.Path)
+
+	if err != nil {
+		c.MasterUp.Set(float64(0))
+		fmt.Println("curl api error")
+	}
+	return nil
+}
+
+func (c *Ms3Collector) collectorList() []prometheus.Collector {
+	return []prometheus.Collector{
+		c.MasterUp,
+	}
+}
+
+func (c *Ms3Collector) Describe(ch chan<- *prometheus.Desc) {
+	//c.MasterUp.Describe(ch)
+	for _, metrics := range c.collectorList() {
+		metrics.Describe(ch)
+	}
+}
+
+func (c *Ms3Collector) Collect(ch chan<- prometheus.Metric) {
+	if err := c.collect(); err != nil {
+		log.Fatalf("failed collecting cluster usage metrics: %s", err)
+		return
+	}
+	for _, metrics := range c.collectorList() {
+		metrics.Collect(ch)
+	}
+	//c.VolumeUp.Collect(ch)
+}
+
+func DoExporter(path, addr string) {
+
+	prometheus.MustRegister(NewMs3Collector(path))
+
+	// TODO
+	// http.Handle(metricsPath, prometheus.Handler())
+	http.Handle("/metrics", prometheus.Handler())
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// TODO
+		// http.Redirect(w, r, metricsPath, http.StatusMovedPermanently)
+		http.Redirect(w, r, "/metrics", http.StatusMovedPermanently)
+	})
+
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		log.Fatalf("cannot start Seaweedfs exporter: %s", err)
+	}
+
+}
+
+/* func main() {
+    // TODO
+    // var path = "http://10.208.133.120:8001/status?pretty=y"
+    var addr string = ":9998"
+    var path string = "10.208.133.120:9666"
+
+    DoExporter(path,addr)
+} */
