@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/tnextday/goseaweed"
 	"io/ioutil"
 	"log"
 	"net"
@@ -14,8 +15,10 @@ import (
 )
 
 type MasterCollector struct {
-	Path      string
-	MasterUp  prometheus.Gauge
+	Path     string
+	MasterUp prometheus.Gauge
+	//Todo: add upload file
+	ClusterUp prometheus.Gauge
 	Volumes   *prometheus.GaugeVec
 	Max       prometheus.Gauge
 	Free      prometheus.Gauge
@@ -36,6 +39,14 @@ func NewMasterCollector(path string) *MasterCollector {
 				Name:      "MasterUp",
 				Help:      "Seaweedfs master Up",
 			}),
+		//Todo: add upload file
+		ClusterUp: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: "SeaWeedfs",
+				Name:      "ClusterUp",
+				Help:      "ClusterUp upload file",
+			},
+		),
 		Volumes: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: "SeaWeedfs",
@@ -64,7 +75,7 @@ func NewMasterCollector(path string) *MasterCollector {
 				Name:      "Size",
 				Help:      "VolumeId size information",
 			},
-			[]string{"rack", "server", "volumeid"},
+			[]string{"rack", "server", "collection", "volumeid"},
 		),
 		FileCount: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -72,7 +83,7 @@ func NewMasterCollector(path string) *MasterCollector {
 				Name:      "FileCount",
 				Help:      "VolumeId filecount information",
 			},
-			[]string{"rack", "server", "volumeid"},
+			[]string{"rack", "server", "collection", "volumeid"},
 		),
 	}
 }
@@ -80,10 +91,24 @@ func NewMasterCollector(path string) *MasterCollector {
 func (c *MasterCollector) collect() error {
 	c.MasterUp.Set(float64(1))
 	_, err := net.Dial("tcp", c.Path)
-
 	if err != nil {
 		c.MasterUp.Set(float64(0))
 		fmt.Println("dial master error")
+	}
+	//Todo: add upload three times
+	times := 3
+	wdclient := goseaweed.NewSeaweed(c.Path)
+	for i := 1; i <= 3; i++ {
+		//if _, err := wdclient.UploadFile("/home/dukai1/weed-exporter.txt", "weed-monitor", ""); err != nil {
+		if _, err := wdclient.UploadFile("/home/dukai1/weed-exporter.txt", "nebulas-monitor", ""); err != nil {
+			if i == times {
+				c.ClusterUp.Set(float64(0))
+				log.Printf("upload three times failed: %s", err.Error())
+			}
+		} else {
+			c.ClusterUp.Set(float64(1))
+			break
+		}
 	}
 
 	client := http.Client{
@@ -106,8 +131,8 @@ func (c *MasterCollector) collect() error {
 	var weedInfo *Info
 	err = json.Unmarshal(data, &weedInfo)
 	if err != nil {
-		fmt.Println("json convert to struct error")
-		return err
+		log.Printf("json convert to struct error: %s", err.Error())
+		return nil
 	}
 
 	max := weedInfo.Volumes.Max
@@ -122,8 +147,8 @@ func (c *MasterCollector) collect() error {
 				//Todo: size == mb
 				size := v.Size / 1024 / 1024
 				id := strconv.FormatInt(v.ID, 10)
-				c.Size.WithLabelValues(rack, volume, id).Set(float64(size))
-				c.FileCount.WithLabelValues(rack, volume, id).Set(float64(v.FileCount))
+				c.Size.WithLabelValues(rack, volume, v.Collection, id).Set(float64(size))
+				c.FileCount.WithLabelValues(rack, volume, v.Collection, id).Set(float64(v.FileCount))
 			}
 		}
 	}
@@ -133,6 +158,8 @@ func (c *MasterCollector) collect() error {
 func (c *MasterCollector) collectorList() []prometheus.Collector {
 	return []prometheus.Collector{
 		c.MasterUp,
+		//Todo: add upload file
+		c.ClusterUp,
 		c.Volumes,
 		c.Max,
 		c.Free,
@@ -156,19 +183,3 @@ func (c *MasterCollector) Collect(ch chan<- prometheus.Metric) {
 		metric.Collect(ch)
 	}
 }
-
-/* func DoExporter(path, addr string) {
-
-	prometheus.MustRegister(NewMasterCollector(path))
-
-	http.Handle("/metrics", prometheus.Handler())
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/metrics", http.StatusMovedPermanently)
-	})
-
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatalf("cannot start weedStatus exporter: %s", err)
-	}
-
-} */

@@ -19,8 +19,17 @@ var _ prometheus.Collector = &WeedExporter{}
 func NewWeedExporter(server, path string) *WeedExporter {
 	var exporter *WeedExporter
 	var pathes []string
-	parts := []string{":8001", ":8002", ":8003", ":8004", ":8005", ":8006", ":8007", ":8008", ":8009", ":8010",
-		":8011", "8012", "8013", "8014", "8015", "8016", "8017", "8018", "8019", "8020", "8021", "8022"}
+	//Todo: 22 disks use this config
+	//parts := []string{":8001", ":8002", ":8003", ":8004", ":8005", ":8006", ":8007", ":8008", ":8009", ":8010",
+	//	":8011", ":8012", ":8013", ":8014", ":8015", ":8016", ":8017", ":8018", ":8019", ":8020", ":8021", ":8022"}
+	//Todo: 12 disks use this config
+	parts := []string{":8001", ":8002", ":8003", ":8004", ":8005", ":8006", ":8007", ":8008", ":8009", ":8010", ":8011", ":8012"}
+	//Todo: 11 disks use this config
+	//parts := []string{":8001", ":8002", ":8003", ":8004", ":8005", ":8006", ":8007", ":8008", ":8009", ":8010", ":8011"}
+	//Todo: 1 disks use this config
+	//parts := []string{":8001"}
+	//Todo: 5 disks use this config
+	//parts := []string{":8001", ":8002", ":8003", ":8004", ":8005"}
 
 	for _, part := range parts {
 		ip := path

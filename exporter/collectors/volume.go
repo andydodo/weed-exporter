@@ -2,16 +2,18 @@ package collectors
 
 import (
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"log"
 	"net"
 	"os"
-	"log"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type VolumeCollector struct {
 	Path     []string
 	VolumeUp prometheus.Gauge
+	//Todo: monitor volume down
+	//VolumeDown prometheus.Gauge
+	VolumeDown *prometheus.GaugeVec
 }
 
 func NewVolumeCollector(path []string) *VolumeCollector {
@@ -27,17 +29,31 @@ func NewVolumeCollector(path []string) *VolumeCollector {
 				Name:      "VolumeUp",
 				Help:      "Seaweedfs volume Up",
 			}),
+		VolumeDown: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: "Seaweedfs",
+				Name:      "VolumeDown",
+				Help:      "Seaweedfs volume Down",
+			},
+			[]string{"volumeNode"},
+		),
 	}
 }
 
 func (c *VolumeCollector) collect() error {
 	c.VolumeUp.Set(float64(len(c.Path)))
+	//Todo: monitor volume down
+	//c.VolumeDown.WithLabelValues("").Set(float64(0))
 	for _, path := range c.Path {
 		_, err := net.Dial("tcp", path)
 
 		if err != nil {
 			c.VolumeUp.Dec()
-			fmt.Println("dial volume error")
+			//Todo: monitor volume down
+			c.VolumeDown.WithLabelValues(path).Set(float64(0))
+		} else {
+			//Todo: monitor volume down
+			c.VolumeDown.WithLabelValues(path).Set(float64(1))
 		}
 	}
 	return nil
@@ -46,6 +62,7 @@ func (c *VolumeCollector) collect() error {
 func (c *VolumeCollector) collectorList() []prometheus.Collector {
 	return []prometheus.Collector{
 		c.VolumeUp,
+		c.VolumeDown,
 	}
 }
 
@@ -66,27 +83,3 @@ func (c *VolumeCollector) Collect(ch chan<- prometheus.Metric) {
 		metrics.Collect(ch)
 	}
 }
-
-/* func DoExporter(host , addr  string) {
-	var path []string
-	parts := []string{":8080", ":8081", ":8082", ":8083", ":8084", ":8085", ":8086", ":8087", ":8088", ":8089", ":8090", ":8091"}
-
-	for _, part := range parts {
-		ip := host
-		ip += part
-		path = append(path, ip)
-	}
-
-	prometheus.MustRegister(NewVolumeCollector(path))
-
-	http.Handle("/metrics", prometheus.Handler())
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/metrics", http.StatusMovedPermanently)
-	})
-
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatalf("cannot start Seaweedfs exporter: %s", err)
-	}
-
-} */
