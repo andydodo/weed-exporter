@@ -90,16 +90,17 @@ func NewMasterCollector(path string) *MasterCollector {
 
 func (c *MasterCollector) collect() error {
 	c.MasterUp.Set(float64(1))
-	_, err := net.Dial("tcp", c.Path)
-	if err != nil {
-		c.MasterUp.Set(float64(0))
-		fmt.Println("dial master error")
-	}
+	/*
+		_, err := net.Dial("tcp", c.Path)
+		if err != nil {
+			c.MasterUp.Set(float64(0))
+			fmt.Println("dial master error")
+		}
+	*/
 	//Todo: add upload three times
 	times := 3
 	wdclient := goseaweed.NewSeaweed(c.Path)
 	for i := 1; i <= 3; i++ {
-		//if _, err := wdclient.UploadFile("/home/dukai1/weed-exporter.txt", "weed-monitor", ""); err != nil {
 		if _, err := wdclient.UploadFile("/home/dukai1/weed-exporter.txt", "nebulas-monitor", ""); err != nil {
 			if i == times {
 				c.ClusterUp.Set(float64(0))
@@ -117,14 +118,15 @@ func (c *MasterCollector) collect() error {
 
 	resp, err := client.Get("http://" + c.Path + "/vol/status?pretty=y")
 	if err != nil {
-		fmt.Println("curl api error")
+		c.MasterUp.Set(float64(0))
+		fmt.Println("master curl api error")
 		return nil
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("read body error")
+		fmt.Println("master read body error")
 		return nil
 	}
 
