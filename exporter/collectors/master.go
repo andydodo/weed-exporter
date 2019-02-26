@@ -104,7 +104,7 @@ func (c *MasterCollector) collect() error {
 		if _, err := wdclient.UploadFile("/home/dukai1/weed-exporter.txt", "nebulas-monitor", ""); err != nil {
 			if i == times {
 				c.ClusterUp.Set(float64(0))
-				log.Printf("upload three times failed: %s", err.Error())
+				log.Printf("upload %d times failed: %s", i, err.Error())
 			}
 		} else {
 			c.ClusterUp.Set(float64(1))
