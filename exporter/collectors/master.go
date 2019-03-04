@@ -7,17 +7,19 @@ import (
 	"github.com/tnextday/goseaweed"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 )
 
+const (
+	times = 3
+)
+
 type MasterCollector struct {
-	Path     string
-	MasterUp prometheus.Gauge
-	//Todo: add upload file
+	Path      string
+	MasterUp  prometheus.Gauge
 	ClusterUp prometheus.Gauge
 	Volumes   *prometheus.GaugeVec
 	Max       prometheus.Gauge
@@ -39,7 +41,6 @@ func NewMasterCollector(path string) *MasterCollector {
 				Name:      "MasterUp",
 				Help:      "Seaweedfs master Up",
 			}),
-		//Todo: add upload file
 		ClusterUp: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: "SeaWeedfs",
@@ -90,21 +91,13 @@ func NewMasterCollector(path string) *MasterCollector {
 
 func (c *MasterCollector) collect() error {
 	c.MasterUp.Set(float64(1))
-	/*
-		_, err := net.Dial("tcp", c.Path)
-		if err != nil {
-			c.MasterUp.Set(float64(0))
-			fmt.Println("dial master error")
-		}
-	*/
-	//Todo: add upload three times
-	times := 3
+
 	wdclient := goseaweed.NewSeaweed(c.Path)
 	for i := 1; i <= 3; i++ {
 		if _, err := wdclient.UploadFile("/home/dukai1/weed-exporter.txt", "nebulas-monitor", ""); err != nil {
 			if i == times {
 				c.ClusterUp.Set(float64(0))
-				log.Printf("upload %d times failed: %s", i, err.Error())
+				log.Printf("upload three times failed: %s", err.Error())
 			}
 		} else {
 			c.ClusterUp.Set(float64(1))
@@ -142,15 +135,15 @@ func (c *MasterCollector) collect() error {
 	free := weedInfo.Volumes.Free
 	c.Free.Set(float64(free))
 
-	for rack, volumes := range weedInfo.Volumes.DataCenters.DefaultDataCenter {
-		for volume, vids := range volumes {
+	for rack, volumesinfo := range weedInfo.Volumes.DataCenters.DefaultDataCenter {
+		for volume, vids := range volumesinfo {
 			c.Volumes.WithLabelValues(rack, volume).Set(float64(len(vids)))
 			for _, v := range vids {
-				//Todo: size == mb
-				size := v.Size / 1024 / 1024
+				replicate := (v.ReplicaPlacement.SameRackCount + v.ReplicaPlacement.DiffRackCount + v.ReplicaPlacement.DiffDataCenterCount + 1)
+				size := (v.Size - v.DeletedByteCount) / 1024 / 1024 / replicate
 				id := strconv.FormatInt(v.ID, 10)
 				c.Size.WithLabelValues(rack, volume, v.Collection, id).Set(float64(size))
-				c.FileCount.WithLabelValues(rack, volume, v.Collection, id).Set(float64(v.FileCount))
+				c.FileCount.WithLabelValues(rack, volume, v.Collection, id).Set(float64(v.FileCount - v.DeleteCount))
 			}
 		}
 	}
@@ -160,7 +153,6 @@ func (c *MasterCollector) collect() error {
 func (c *MasterCollector) collectorList() []prometheus.Collector {
 	return []prometheus.Collector{
 		c.MasterUp,
-		//Todo: add upload file
 		c.ClusterUp,
 		c.Volumes,
 		c.Max,
