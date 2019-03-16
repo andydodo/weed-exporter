@@ -3,14 +3,15 @@ package collectors
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/tnextday/goseaweed"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	. "github.com/andy/logger"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/tnextday/goseaweed"
 )
 
 const (
@@ -30,7 +31,7 @@ type MasterCollector struct {
 
 func NewMasterCollector(path string) *MasterCollector {
 	if path == "" {
-		log.Fatalf("there is no path found")
+		Logger.Println("there is no path found")
 		os.Exit(1)
 	}
 	return &MasterCollector{
@@ -97,7 +98,7 @@ func (c *MasterCollector) collect() error {
 		if _, err := wdclient.UploadFile("/home/dukai1/weed-exporter.txt", "nebulas-monitor", ""); err != nil {
 			if i == times {
 				c.ClusterUp.Set(float64(0))
-				log.Printf("upload three times failed: %s", err.Error())
+				Logger.Printf("upload three times failed: %s", err.Error())
 			}
 		} else {
 			c.ClusterUp.Set(float64(1))
@@ -112,21 +113,21 @@ func (c *MasterCollector) collect() error {
 	resp, err := client.Get("http://" + c.Path + "/vol/status?pretty=y")
 	if err != nil {
 		c.MasterUp.Set(float64(0))
-		fmt.Println("master curl api error")
+		Logger.Println("master curl api error")
 		return nil
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("master read body error")
+		Logger.Println("master read body error")
 		return nil
 	}
 
 	var weedInfo *Info
 	err = json.Unmarshal(data, &weedInfo)
 	if err != nil {
-		log.Printf("json convert to struct error: %s", err.Error())
+		Logger.Printf("json convert to struct error: %s", err.Error())
 		return nil
 	}
 
@@ -170,7 +171,7 @@ func (c *MasterCollector) Describe(ch chan<- *prometheus.Desc) {
 
 func (c *MasterCollector) Collect(ch chan<- prometheus.Metric) {
 	if err := c.collect(); err != nil {
-		log.Fatalf("failed collecting cluster usage metrics: %s", err)
+		Logger.Printf("failed collecting cluster usage metrics: %s", err)
 		return
 	}
 	for _, metric := range c.collectorList() {
