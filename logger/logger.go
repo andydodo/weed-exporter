@@ -11,7 +11,7 @@ var Logger *log.Logger
 
 func init() {
 	file := initLogfile()
-	Logger = log.New(file, "[wd-exporter] ", log.Lmicroseconds)
+	Logger = log.New(file, "[wd-exporter] ", log.Ldate|log.Lmicroseconds)
 }
 
 func initLogfile() *os.File {
