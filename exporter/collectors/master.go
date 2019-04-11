@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -106,21 +107,33 @@ func (c *MasterCollector) collect() error {
 		}
 	}
 
-	client := http.Client{
-		Timeout: time.Duration(3) * time.Second,
+	client := &http.Client{
+		Transport: &Transport{
+			Proxy: ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   60 * time.Second,
+				KeepAlive: 60 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+		Timeout: time.Duration(10) * time.Second,
 	}
 
 	resp, err := client.Get("http://" + c.Path + "/vol/status?pretty=y")
 	if err != nil {
 		c.MasterUp.Set(float64(0))
-		Logger.Println("master curl api error")
+		Logger.Printf("master curl api error: %s", err.Error())
 		return nil
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		Logger.Println("master read body error")
+		Logger.Printf("master read body error: %s", err.Error())
 		return nil
 	}
 
