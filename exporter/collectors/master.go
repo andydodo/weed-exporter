@@ -39,7 +39,7 @@ func NewMasterCollector(path string) *MasterCollector {
 		Path: path,
 		MasterUp: prometheus.NewGauge(
 			prometheus.GaugeOpts{
-				Namespace: "Seaweedfs",
+				Namespace: "SeaWeedfs",
 				Name:      "MasterUp",
 				Help:      "Seaweedfs master Up",
 			}),

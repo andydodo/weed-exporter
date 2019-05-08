@@ -25,13 +25,13 @@ func NewVolumeCollector(path []string) *VolumeCollector {
 		Path: path,
 		VolumeUp: prometheus.NewGauge(
 			prometheus.GaugeOpts{
-				Namespace: "Seaweedfs",
+				Namespace: "SeaWeedfs",
 				Name:      "VolumeUp",
 				Help:      "Seaweedfs volume Up",
 			}),
 		VolumeDown: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Namespace: "Seaweedfs",
+				Namespace: "SeaWeedfs",
 				Name:      "VolumeDown",
 				Help:      "Seaweedfs volume Down",
 			},
