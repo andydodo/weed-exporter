@@ -113,33 +113,14 @@ func (c *MasterCollector) collect() error {
 		}
 	}
 
-	client := &http.Client{
-		Transport: &Transport{
-			Proxy: ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   60 * time.Second,
-				KeepAlive: 60 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-		Timeout: time.Duration(10) * time.Second,
-	}
-
-	resp, err := client.Get("http://" + c.Path + "/vol/status?pretty=y")
+	req := NewRequest()
+	req.Url = "http://" + c.Path + "/vol/status?pretty=y"
+	req.MaxNums = 100
+	req.Timeout = 30 * time.Second
+	data, err := req.Request()
 	if err != nil {
 		c.MasterUp.Set(float64(0))
 		Logger.Printf("master curl api error: %s", err.Error())
-		return nil
-	}
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		Logger.Printf("master read body error: %s", err.Error())
 		return nil
 	}
 
