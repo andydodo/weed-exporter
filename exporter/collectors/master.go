@@ -93,8 +93,14 @@ func NewMasterCollector(path string) *MasterCollector {
 
 func (c *MasterCollector) collect() error {
 	c.MasterUp.Set(float64(1))
-
 	wdclient := goseaweed.NewSeaweed(c.Path)
+
+	defer func() {
+		if err := recover(); err != nil {
+			Logger.Printf("uploadfile had panic: %s", err)
+		}
+	}()
+
 	for i := 1; i <= 3; i++ {
 		if _, err := wdclient.UploadFile("/home/dukai1/weed-exporter.txt", "nebulas-monitor", ""); err != nil {
 			if i == times {
