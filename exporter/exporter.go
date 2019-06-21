@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"os/exec"
 	"strings"
 	"sync"
 	"unicode"
 
 	"github.com/andy/weed-exporter/exporter/collectors"
+	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -35,7 +37,6 @@ func NewWeedExporter(server, path string) *WeedExporter {
 	switch num {
 	case "22":
 		//Todo: 22 disks use this config
-		fmt.Println("ssssss")
 		parts := []string{":8001", ":8002", ":8003", ":8004", ":8005", ":8006", ":8007", ":8008", ":8009", ":8010", ":8011", ":8012", ":8013", ":8014", ":8015", ":8016", ":8017", ":8018", ":8019", ":8020", ":8021", ":8022"}
 		for _, part := range parts {
 			ip := path
@@ -115,18 +116,25 @@ func (c *WeedExporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 func DoExporter(path, addr, server string) {
+	r := mux.NewRouter()
 	prometheus.MustRegister(NewWeedExporter(server, path))
-	http.Handle("/metrics", prometheus.Handler())
-	http.HandleFunc("/debug/pprof/", pprof.Index)
-	http.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	http.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	http.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	http.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/metrics", http.StatusMovedPermanently)
+	r.Handle("/metrics", prometheus.Handler())
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<html>
+    <head><title>Nebulasfs Master Exporter</title></head>
+    <body>
+    <h1>Nebulasfs Master Exporter</h1>
+    <p><a href='` + "/metrics" + `'>Metrics</a></p>
+    </body>
+    </html>`))
 	})
+	r.HandleFunc("/debug/pprof/", pprof.Index)
+	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatalf("cannot start weed exporter: %s", err)
 	}
 
