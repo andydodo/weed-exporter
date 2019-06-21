@@ -115,11 +115,13 @@ func (c *WeedExporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 func DoExporter(path, addr, server string) {
-
 	prometheus.MustRegister(NewWeedExporter(server, path))
-
 	http.Handle("/metrics", prometheus.Handler())
-
+	http.HandleFunc("/debug/pprof/", pprof.Index)
+	http.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	http.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	http.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	http.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/metrics", http.StatusMovedPermanently)
 	})
