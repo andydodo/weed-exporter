@@ -121,9 +121,9 @@ func DoExporter(path, addr, server string) {
 	r.Handle("/metrics", prometheus.Handler())
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
-    <head><title>Nebulasfs Master Exporter</title></head>
+    <head><title>Weed Master Exporter</title></head>
     <body>
-    <h1>Nebulasfs Master Exporter</h1>
+    <h1>Weed Master Exporter</h1>
     <p><a href='` + "/metrics" + `'>Metrics</a></p>
     </body>
     </html>`))
