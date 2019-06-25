@@ -132,7 +132,7 @@ func DoExporter(path, addr, server string) {
 	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	//r.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
 	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatalf("cannot start weed exporter: %s", err)
