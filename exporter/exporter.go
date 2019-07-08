@@ -86,16 +86,12 @@ func NewWeedExporter(server, path string) *WeedExporter {
 				collectors.NewMasterCollector(path),
 			},
 		}
-		fmt.Println("a")
 	case "volume":
-		fmt.Println(pathes)
 		exporter = &WeedExporter{
 			collectors: []prometheus.Collector{
 				collectors.NewVolumeCollector(pathes),
 			},
 		}
-		fmt.Println("b")
-		fmt.Println(pathes)
 	}
 	return exporter
 }
