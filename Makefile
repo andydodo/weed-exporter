@@ -16,4 +16,3 @@ deps:
 clean:
 		go clean -i $(SOURCE_DIR)
 			rm -rf $(BINARY)
-
