@@ -52,7 +52,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// volumeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	volumeCmd.Flags().StringVarP(&host, "host", "i", "", "Seaweedfs volume host")
+	volumeCmd.Flags().StringVarP(&host, "host", "i", "", "Seaweedfs volume")
 	volumeCmd.Flags().StringVarP(&port, "port", "p", "", "Monitor Listen port")
 	volumeCmd.Flags().StringVarP(&volume, "type", "t", "volume", "SeaWeedfs server type")
 }

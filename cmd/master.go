@@ -52,7 +52,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// masterCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	masterCmd.Flags().StringVarP(&addr, "addr", "i", "", "Monitor listen address")
-	masterCmd.Flags().StringVarP(&path, "path", "p", "", "SeaWeedfs master path")
+	masterCmd.Flags().StringVarP(&addr, "port", "p", "", "Monitor listen address")
+	masterCmd.Flags().StringVarP(&path, "url", "u", "", "SeaWeedfs master")
 	masterCmd.Flags().StringVarP(&master, "type", "t", "master", "SeaWeedfs server type")
 }
