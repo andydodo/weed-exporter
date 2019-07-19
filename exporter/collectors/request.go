@@ -43,10 +43,11 @@ func (r *Req) Request() ([]byte, error) {
 
 	resp, err := httpClient.Do(req)
 
-	if err != nil {
+	if err != nil || err != nil && resp.StatusCode != 200 {
 		Logger.Printf("http response url error:(%v)", err)
 		return nil, errors.New("http response error")
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
