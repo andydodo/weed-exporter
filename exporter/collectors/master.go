@@ -12,6 +12,7 @@ import (
 
 	. "github.com/andy/logger"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/thedevsaddam/gojsonq"
 	"github.com/tnextday/goseaweed"
 )
 
